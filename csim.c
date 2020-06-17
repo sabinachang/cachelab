@@ -33,16 +33,21 @@ char *tracePtr;
 int s;
 int b;
 int E;
-CacheLine **cache;
-Result *result;
+// CacheLine **cache;
+// Result *result;
 
 int main(int argc, const char **argv) {
 
         parseInput(argc, argv);
-        initCache();
         
         // TODO print correct value
+        CacheLine **cache = initCache();
+        if (!cache) {
+        	return 0;
+        }
         
+        Result *result = startTrace(cache);
+
         if (result) {
         	printSummary(result->hits, 
         		result->misses, 
@@ -84,24 +89,32 @@ void parseInput(int argc, const char **argv) {
 	return;
 } 
 
-void initCache() {
-	cache = (CacheLine **) malloc(1 << s * sizeof(CacheLine*));
-
+CacheLine **initCache() {
+	CacheLine **cache = (CacheLine **) malloc(1 << s * sizeof(CacheLine*));
+	
+	if(!cache) {
+		return NULL;
+	}
 	// TODO handle malloc fails
 	for (i = 0; i < s; i++ ) {
 		cache[i] = (CacheLine*) malloc(1 << E * sizeof(CacheLine));
 	}
-	return;
+	return cache;
 }
 
-void startTrace() {
+Result *startTrace(CacheLine **cache) {
 	FILE *fptr = fopen(tracePtr, "r");
 
 	if (!fptr) {
-		return;
+		return NULL;
 	}
 
-	result = (Result*) malloc(sizof(Result));
+	Result *result = (Result*) malloc(sizof(Result));
+
+	if (!result) {
+		return NULL;
+	}
+
 	char op;
 	unsigned long addr;
 	int size;
@@ -123,6 +136,8 @@ void startTrace() {
 
 	return;
 }
+
+
 
 void freeCache() {
 	// TODO handle free cache and result
