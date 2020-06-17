@@ -21,18 +21,36 @@ typedef struct CacheLine {
 	int lruCounter = 0;
 } CacheLine;
 
+typedef struct Result {
+	int hits = 0;
+	int misses = 0;
+	int evictions = 0;
+	int dirtyBytesEvicted = 0;
+	int dirtyBytesInCache = 0;
+} Result;
+
 char *tracePtr;
 int s;
 int b;
 int E;
 CacheLine **cache;
+Result *result;
 
 int main(int argc, const char **argv) {
+
         parseInput(argc, argv);
         initCache();
         
         // TODO print correct value
-        printSummary(0, 0, 0, 0, 0);
+        
+        if (result) {
+        	printSummary(result->hits, 
+        		result->misses, 
+        		result->evictions, 
+        		result->dirtyBytesEvicted, 
+        		result->dirtyBytesInCache);
+        }
+        freeCache();
         return 0;
 }
 
@@ -61,7 +79,6 @@ void parseInput(int argc, const char **argv) {
 			default:
 			//help
 			break;
-
 		}
 	}
 	return;
@@ -69,17 +86,52 @@ void parseInput(int argc, const char **argv) {
 
 void initCache() {
 	cache = (CacheLine **) malloc(1 << s * sizeof(CacheLine*));
+
+	// TODO handle malloc fails
 	for (i = 0; i < s; i++ ) {
 		cache[i] = (CacheLine*) malloc(1 << E * sizeof(CacheLine));
 	}
 	return;
 }
 
+void startTrace() {
+	FILE *fptr = fopen(tracePtr, "r");
+
+	if (!fptr) {
+		return;
+	}
+
+	result = (Result*) malloc(sizof(Result));
+	char op;
+	unsigned long addr;
+	int size;
+
+	while (fscanf(fptr, " %c %lx %d", &op, &addr, &size) > 0) {
+		switch(op) {
+			case 'L':
+			//TODO read from cache
+			break;
+			case 'S':
+			// TODO write to cache
+			break;
+			default:
+			break;
+		}
+	}
+
+	fclose(fptr);
+
+	return;
+}
+
 void freeCache() {
+	// TODO handle free cache and result
 	for (i = 0; i < s; i++) {
-		free(cache[i])
+		free(cache[i]);
 	}
 	free(cache);
 }
+
+
 
 
