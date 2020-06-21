@@ -36,6 +36,7 @@ int s;
 int b;
 int E;
 int verboseFlag = 0;
+int timeStamp = 0;
 // CacheLine **cache;
 // Result *result;
 
@@ -133,6 +134,7 @@ Result *startTrace(CacheLine **cache) {
 	int size;
 
 	while (fscanf(fptr, " %c %llx %d", &op, &addr, &size) > 0) {
+		++timeStamp;
 		switch(op) {
 			case 'L':
 			readCache(addr,cache,result);
@@ -159,7 +161,7 @@ void readCache(unsigned long long addr, CacheLine **cache, Result *result) {
 		// check for hit
 		if (cache[setIndex][i].validFlag && 
 			cache[setIndex][i].tag == tag) {
-			++(cache[setIndex][i].lruCounter);
+			cache[setIndex][i].lruCounter = timeStamp;
 			++(result->hits); 
 			if (verboseFlag) {
 				printf("L %llx hit\n", addr);
@@ -173,7 +175,7 @@ void readCache(unsigned long long addr, CacheLine **cache, Result *result) {
 		if (cache[setIndex][i].validFlag == 0) {
 			cache[setIndex][i].validFlag = 1;
 			cache[setIndex][i].tag = tag;
-			cache[setIndex][i].lruCounter = 1;
+			cache[setIndex][i].lruCounter = timeStamp;
 			cache[setIndex][i].dirtyFlag = 0;
 			++(result->misses);
 			if (verboseFlag) {
@@ -199,7 +201,7 @@ void readCache(unsigned long long addr, CacheLine **cache, Result *result) {
 		}
 		cache[setIndex][minUseIndex].validFlag = 1;
 		cache[setIndex][minUseIndex].tag = tag;
-		cache[setIndex][minUseIndex].lruCounter = 1;
+		cache[setIndex][minUseIndex].lruCounter = timeStamp;
 		++(result->evictions);
 		++(result->misses);
 		if (verboseFlag) {
@@ -220,7 +222,7 @@ void writeCache(unsigned long long addr, CacheLine **cache, Result *result) {
 		if (cache[setIndex][i].validFlag &&
 			cache[setIndex][i].tag == tag) {
 			cache[setIndex][i].dirtyFlag = 1;
-			++(cache[setIndex][i].lruCounter);
+			cache[setIndex][i].lruCounter = timeStamp;
 			++(result->totalDirtyCount);
 			++(result->hits);
 			if (verboseFlag) {
@@ -238,7 +240,7 @@ void writeCache(unsigned long long addr, CacheLine **cache, Result *result) {
 			cache[setIndex][i].validFlag = 1;
 			cache[setIndex][i].tag = tag;
 			cache[setIndex][i].dirtyFlag = 1;
-			cache[setIndex][i].lruCounter = 1;
+			cache[setIndex][i].lruCounter = timeStamp;
 			++(result->misses);
 			++(result->totalDirtyCount);
 			if (verboseFlag) {
@@ -265,9 +267,9 @@ void writeCache(unsigned long long addr, CacheLine **cache, Result *result) {
 		}
 		cache[setIndex][minUseIndex].validFlag = 1;
 		cache[setIndex][minUseIndex].tag = tag;
-		cache[setIndex][minUseIndex].lruCounter = 1;
+		cache[setIndex][minUseIndex].lruCounter = timeStamp;
 		cache[setIndex][minUseIndex].dirtyFlag = 1;
-		++(result->totalDirtyCount);
+	 	++(result->totalDirtyCount);
 		++(result->evictions);
 		++(result->misses);
 			if (verboseFlag) {
