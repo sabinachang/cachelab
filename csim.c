@@ -45,7 +45,8 @@ void readCache(unsigned long long addr, CacheLine **cache, Result *result);
 void writeCache(unsigned long long addr, CacheLine **cache, Result *result);
 unsigned long long getTag(unsigned long long addr);
 int getSet(unsigned long long addr);
-void freeCache();
+void freeCache(CacheLine **cache);
+void freeResult(Result *result);
 
 int main(int argc, char **argv) {
 
@@ -53,6 +54,7 @@ int main(int argc, char **argv) {
         
         CacheLine **cache = initCache();
         if (!cache) {
+        	freeCache(cache);
         	return 0;
         }
         
@@ -69,6 +71,7 @@ int main(int argc, char **argv) {
         		dirtyBytesEvicted);
         }
         freeCache(cache);
+        freeResult(result);
         return 0;
 }
 
@@ -109,6 +112,9 @@ CacheLine **initCache() {
 	int i;
 	for (i = 0; i < (1 << s); i++ ) {
 		cache[i] = (CacheLine*) calloc( E, sizeof(CacheLine));
+		if (!cache[i]) {
+			return NULL;
+		}
 	}
 	return cache;
 }
@@ -292,12 +298,21 @@ unsigned long long getTag(unsigned long long addr) {
 }
 
 void freeCache(CacheLine** cache) {
-	// TODO handle free cache and result
 	int i;
 	for (i = 0; i < (1 << s); i++) {
-		free(cache[i]);
+		if (cache[i]) {
+			free(cache[i]);
+		}
 	}
-	free(cache);
+	if (cache) {
+		free(cache);
+	}
+}
+
+void freeResult(Result *result) {
+	if (result) {
+		free(result);
+	}
 }
 
 
