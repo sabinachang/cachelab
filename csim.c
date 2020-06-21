@@ -19,7 +19,6 @@ typedef struct CacheLine {
 	int dirtyFlag;
 	int validFlag;
 	unsigned long long tag;
-	int block;
 	int lruCounter;
 } CacheLine;
 
