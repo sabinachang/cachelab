@@ -18,7 +18,7 @@
 typedef struct CacheLine {
 	int dirtyFlag;
 	int validFlag;
-	int tag;
+	unsigned long long tag;
 	int block;
 	int lruCounter;
 } CacheLine;
@@ -44,7 +44,7 @@ CacheLine **initCache();
 Result *startTrace(CacheLine **cache);
 void readCache(unsigned long long addr, CacheLine **cache, Result *result);
 void writeCache(unsigned long long addr, CacheLine **cache, Result *result);
-int getTag(unsigned long long addr);
+unsigned long long getTag(unsigned long long addr);
 int getSet(unsigned long long addr);
 void freeCache();
 
@@ -152,14 +152,18 @@ Result *startTrace(CacheLine **cache) {
 
 void readCache(unsigned long long addr, CacheLine **cache, Result *result) {
 	int setIndex = getSet(addr);
-	int tag = getTag(addr);
+	unsigned long long tag = getTag(addr);
 	int i;
+
 	for (i = 0; i < E; i ++) {
 		// check for hit
 		if (cache[setIndex][i].validFlag && 
 			cache[setIndex][i].tag == tag) {
 			++(cache[setIndex][i].lruCounter);
 			++(result->hits); 
+			if (verboseFlag) {
+				printf("L %llx hit\n", addr);
+			}
 			return;
 		} 
 	}
@@ -172,6 +176,9 @@ void readCache(unsigned long long addr, CacheLine **cache, Result *result) {
 			cache[setIndex][i].lruCounter = 1;
 			cache[setIndex][i].dirtyFlag = 0;
 			++(result->misses);
+			if (verboseFlag) {
+				printf("L %llx miss\n", addr);
+			}
 			return;
 		}
 	}
@@ -195,6 +202,9 @@ void readCache(unsigned long long addr, CacheLine **cache, Result *result) {
 		cache[setIndex][minUseIndex].lruCounter = 1;
 		++(result->evictions);
 		++(result->misses);
+		if (verboseFlag) {
+			printf("L %llx miss eviction\n", addr);
+		}
 	}
 	return;
 }
@@ -202,8 +212,9 @@ void readCache(unsigned long long addr, CacheLine **cache, Result *result) {
 
 void writeCache(unsigned long long addr, CacheLine **cache, Result *result) {
 	int setIndex = getSet(addr);
-	int tag = getTag(addr);
+	unsigned long long tag = getTag(addr);
 	int i = 0;
+
 	//write hit: write back
 	for (i = 0; i < E; i++) {
 		if (cache[setIndex][i].validFlag &&
@@ -212,6 +223,9 @@ void writeCache(unsigned long long addr, CacheLine **cache, Result *result) {
 			++(cache[setIndex][i].lruCounter);
 			++(result->totalDirtyCount);
 			++(result->hits);
+			if (verboseFlag) {
+				printf("S %llx hit\n", addr);
+			}
 			return;
 		}
 	}
@@ -227,6 +241,9 @@ void writeCache(unsigned long long addr, CacheLine **cache, Result *result) {
 			cache[setIndex][i].lruCounter = 1;
 			++(result->misses);
 			++(result->totalDirtyCount);
+			if (verboseFlag) {
+				printf("S %llx miss\n", addr);
+			}
 			return;
 		}
 	}
@@ -253,6 +270,9 @@ void writeCache(unsigned long long addr, CacheLine **cache, Result *result) {
 		++(result->totalDirtyCount);
 		++(result->evictions);
 		++(result->misses);
+			if (verboseFlag) {
+				printf("S %llx miss, eviction\n", addr);
+			}
 	}
 	return;
 
@@ -265,8 +285,9 @@ int getSet(unsigned long long addr) {
 	return ((1 << s) - 1) & (addr >> b);
 }
 
-int getTag(unsigned long long addr) {
-	return ((1 << (64 - b - s))- 1) & (addr >> (b + s));
+unsigned long long getTag(unsigned long long addr) {
+	unsigned long long shift = b+s;
+	return ((1LL << (63LL - shift))- 1LL) & (addr >> shift);
 }
 
 // int getBlock(unsigned long long addr) {
