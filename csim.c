@@ -37,8 +37,6 @@ int b;
 int E;
 int verboseFlag = 0;
 int timeStamp = 0;
-// CacheLine **cache;
-// Result *result;
 
 void parseInput(int argc, char **argv);
 CacheLine **initCache();
@@ -108,7 +106,6 @@ CacheLine **initCache() {
 	if(!cache) {
 		return NULL;
 	}
-	// TODO handle malloc fails
 	int i;
 	for (i = 0; i < (1 << s); i++ ) {
 		cache[i] = (CacheLine*) calloc( E, sizeof(CacheLine));
@@ -293,14 +290,6 @@ unsigned long long getTag(unsigned long long addr) {
 	unsigned long long shift = b+s;
 	return ((1LL << (63LL - shift))- 1LL) & (addr >> shift);
 }
-
-// int getBlock(unsigned long long addr) {
-// 	if (b == 0) {
-// 		return addr;
-// 	}
-
-// 	return ((1 << b) - 1) & (addr)
-// }
 
 void freeCache(CacheLine** cache) {
 	// TODO handle free cache and result
