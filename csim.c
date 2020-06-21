@@ -27,14 +27,15 @@ typedef struct Result {
 	int hits;
 	int misses;
 	int evictions;
-	int dirtyBytesEvicted;
-	int dirtyBytesInCache;
+	int totalDirtyCount;
+	int evictedDirtyCount;
 } Result;
 
 char *tracePtr;
 int s;
 int b;
 int E;
+int verboseFlag = 0;
 // CacheLine **cache;
 // Result *result;
 
@@ -59,11 +60,14 @@ int main(int argc, char **argv) {
         Result *result = startTrace(cache);
 
         if (result) {
+        	int dirtyBytesInCache = (1 << b) * ((result->totalDirtyCount) - (result->evictedDirtyCount));
+        	int dirtyBytesEvicted = (1 << b) * (result->evictedDirtyCount);
+
         	printSummary(result->hits, 
         		result->misses, 
         		result->evictions, 
-        		result->dirtyBytesEvicted, 
-        		result->dirtyBytesInCache);
+        		dirtyBytesInCache,
+        		dirtyBytesEvicted);
         }
         freeCache(cache);
         return 0;
@@ -74,7 +78,7 @@ void parseInput(int argc, char **argv) {
 	while((opt = getopt(argc, argv, "hvs:E:b:t:")) != -1) {
 		switch (opt) {
 			case 'v':
-			// TODO verbose version
+			verboseFlag = 1;
 			break;
 			case 's':
 			s = atoi(optarg);
@@ -131,12 +135,9 @@ Result *startTrace(CacheLine **cache) {
 	while (fscanf(fptr, " %c %llx %d", &op, &addr, &size) > 0) {
 		switch(op) {
 			case 'L':
-			//TODO read from cache
 			readCache(addr,cache,result);
-
 			break;
 			case 'S':
-			// TODO write to cache
 			writeCache(addr,cache,result);
 			break;
 			default:
@@ -159,8 +160,8 @@ void readCache(unsigned long long addr, CacheLine **cache, Result *result) {
 			cache[setIndex][i].tag == tag) {
 			++(cache[setIndex][i].lruCounter);
 			++(result->hits); 
+			return;
 		} 
-		return;
 	}
 
 	// check for cold miss
@@ -169,6 +170,7 @@ void readCache(unsigned long long addr, CacheLine **cache, Result *result) {
 			cache[setIndex][i].validFlag = 1;
 			cache[setIndex][i].tag = tag;
 			cache[setIndex][i].lruCounter = 1;
+			cache[setIndex][i].dirtyFlag = 0;
 			++(result->misses);
 			return;
 		}
@@ -177,17 +179,16 @@ void readCache(unsigned long long addr, CacheLine **cache, Result *result) {
 	// conflict miss
 	int minUseIndex = -1;
 	int minUseCount = INT_MAX;
-	for (int i = 0; i < E; i++) {
+	for (i = 0; i < E; i++) {
 		if (cache[setIndex][i].lruCounter < minUseCount) {
 			minUseCount = cache[setIndex][i].lruCounter;
 			minUseIndex = i;
 		}
 	}
-
 	if (minUseIndex >= 0) {
 		if(cache[setIndex][minUseIndex].dirtyFlag) {
-			result->dirtyBytesEvicted += (1 << b);
-			result->dirtyBytesInCache -= (1 << b);
+			cache[setIndex][minUseIndex].dirtyFlag = 0;
+			++(result->evictedDirtyCount);
 		}
 		cache[setIndex][minUseIndex].validFlag = 1;
 		cache[setIndex][minUseIndex].tag = tag;
@@ -209,7 +210,7 @@ void writeCache(unsigned long long addr, CacheLine **cache, Result *result) {
 			cache[setIndex][i].tag == tag) {
 			cache[setIndex][i].dirtyFlag = 1;
 			++(cache[setIndex][i].lruCounter);
-			result->dirtyBytesInCache += (1 << b);
+			++(result->totalDirtyCount);
 			++(result->hits);
 			return;
 		}
@@ -225,7 +226,7 @@ void writeCache(unsigned long long addr, CacheLine **cache, Result *result) {
 			cache[setIndex][i].dirtyFlag = 1;
 			cache[setIndex][i].lruCounter = 1;
 			++(result->misses);
-			result->dirtyBytesInCache += (1 << b);
+			++(result->totalDirtyCount);
 			return;
 		}
 	}
@@ -233,7 +234,7 @@ void writeCache(unsigned long long addr, CacheLine **cache, Result *result) {
 	// no empty line, replace one to make space
 	int minUseIndex = -1;
 	int minUseCount = INT_MAX;
-	for (int i = 0; i < E; i++) {
+	for (i = 0; i < E; i++) {
 		if (cache[setIndex][i].lruCounter < minUseCount) {
 			minUseCount = cache[setIndex][i].lruCounter;
 			minUseIndex = i;
@@ -242,16 +243,16 @@ void writeCache(unsigned long long addr, CacheLine **cache, Result *result) {
 
 	if (minUseIndex >= 0) {
 		if(cache[setIndex][minUseIndex].dirtyFlag) {
-			result->dirtyBytesEvicted += (1 << b);
-			result->dirtyBytesInCache -= (1 << b);
+			++(result->evictedDirtyCount);
+			cache[setIndex][minUseIndex].dirtyFlag = 0;
 		}
 		cache[setIndex][minUseIndex].validFlag = 1;
 		cache[setIndex][minUseIndex].tag = tag;
 		cache[setIndex][minUseIndex].lruCounter = 1;
 		cache[setIndex][minUseIndex].dirtyFlag = 1;
+		++(result->totalDirtyCount);
 		++(result->evictions);
 		++(result->misses);
-		result->dirtyBytesInCache += (1 << b);
 	}
 	return;
 
