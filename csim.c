@@ -221,9 +221,11 @@ void writeCache(unsigned long long addr, CacheLine **cache, Result *result) {
 	for (i = 0; i < E; i++) {
 		if (cache[setIndex][i].validFlag &&
 			cache[setIndex][i].tag == tag) {
-			cache[setIndex][i].dirtyFlag = 1;
+			if (cache[setIndex][i].dirtyFlag == 0) {
+				++(result->totalDirtyCount);
+				cache[setIndex][i].dirtyFlag = 1;
+			}
 			cache[setIndex][i].lruCounter = timeStamp;
-			++(result->totalDirtyCount);
 			++(result->hits);
 			if (verboseFlag) {
 				printf("S %llx hit\n", addr);
