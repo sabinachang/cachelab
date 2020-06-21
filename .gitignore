@@ -6,4 +6,5 @@ test-trans
 tracegen-ct
 handin.tar
 trace.*
+!ct/ct.bc
 
