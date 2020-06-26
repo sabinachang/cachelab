@@ -56,8 +56,18 @@ static void transpose_submit(size_t M, size_t N, const double A[N][M], double B[
             for (j = 0; j < N; j += BLOCKSIZE ) {
                 for (k = i ; k < i + BLOCKSIZE; k++) {
                     for (l = j; l < j + BLOCKSIZE; l++) {
+                        if (i == j) {
+                        // diagonal, put a row of block into tmp
+                        *(tmp + BLOCKSIZE * (i + 1) + l) = A[k][l];
+                       } else {
                         B[l][k] = A[k][l];
                        }
+                    }
+                    if (i == j) {
+                        //now put into a column of block from tmp
+                        for (l = j; l < j + BLOCKSIZE; l++) {
+                            B[l][k] = *(tmp + BLOCKSIZE * (i + 1) + l);
+                        }
                     }
                 }
             }
