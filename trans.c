@@ -1,5 +1,7 @@
 /*
  * trans.c - Matrix transpose B = A^T
+ * 
+ * Author: enhanc
  *
  * Each transpose function must have a prototype of the form:
  * void trans(size_t M, size_t N, double A[N][M], double B[M][N], double *tmp);
@@ -22,6 +24,7 @@
 #include "cachelab.h"
 #include "contracts.h"
 
+#define BLOCKSIZE 8
 /* Forward declarations */
 static bool is_transpose(size_t M, size_t N, const double A[N][M], const double B[M][N]);
 static void trans(size_t M, size_t N, const double A[N][M], double B[M][N], double *tmp);
@@ -44,8 +47,22 @@ static void transpose_submit(size_t M, size_t N, const double A[N][M], double B[
      * It's OK to choose different functions based on array size, but
      * your code must be correct for all values of M and N
      */
-    if (M == N)
-        trans(M, N, A, B, tmp);
+    if (M == 32 && N == 32){
+
+        //trans(M, N, A, B, tmp);
+        int i, j, k, l;
+    
+        for (i = 0; i < M; i += BLOCKSIZE) {
+            for (j = 0; j < N; j += BLOCKSIZE ) {
+                for (k = i ; k < i + BLOCKSIZE; k++) {
+                    for (l = j; l < j + BLOCKSIZE; l++) {
+                        B[l][k] = A[k][l];
+                       }
+                    }
+                }
+            }
+        }
+    }
     else
         trans_tmp(M, N, A, B, tmp);
 }
@@ -111,6 +128,8 @@ static void trans_tmp(size_t M, size_t N, const double A[N][M], double B[M][N], 
 
     ENSURES(is_transpose(M, N, A, B));
 }
+
+
 
 /*
  * registerFunctions - This function registers your transpose
