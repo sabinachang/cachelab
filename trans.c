@@ -25,10 +25,12 @@
 #include "contracts.h"
 
 #define BLOCKSIZE 8
+#define RECT_MATRIX_BLOCK 4
 /* Forward declarations */
 static bool is_transpose(size_t M, size_t N, const double A[N][M], const double B[M][N]);
 static void trans(size_t M, size_t N, const double A[N][M], double B[M][N], double *tmp);
 static void trans_tmp(size_t M, size_t N, const double A[N][M], double B[M][N], double *tmp);
+static int findMin(int a, int b);
 
 /*
  * transpose_submit - This is the solution transpose function that you
@@ -73,9 +75,20 @@ static void transpose_submit(size_t M, size_t N, const double A[N][M], double B[
             }
         }
     }
-    else
-        trans_tmp(M, N, A, B, tmp);
-}
+    else {
+        int i, j, k, l;
+        
+        for (i = 0; i < N; i += RECT_MATRIX_BLOCK) {
+            for (j = 0; j < M; j += RECT_MATRIX_BLOCK ) {
+                for (k = i ; k < findMin(N,i + RECT_MATRIX_BLOCK); k++) {
+                    for (l = j; l < findMin(M,j + RECT_MATRIX_BLOCK); l++) {
+                        B[l][k] = A[k][l];
+                       }
+                    }
+                }
+            }
+        }
+    }
 /*
  * You can define additional transpose functions below. We've defined
  * some simple ones below to help you get started.
@@ -178,3 +191,7 @@ static bool is_transpose(size_t M, size_t N, const double A[N][M], const double 
     return true;
 }
 
+static int findMin(int a, int b) {
+    if (a < b) return a;
+    return b;
+}
