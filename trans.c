@@ -24,7 +24,7 @@
 #include "cachelab.h"
 #include "contracts.h"
 
-#define BLOCKSIZE 8
+#define SQUARE_MATRIX_BLOCK 8
 #define RECT_MATRIX_BLOCK 4
 /* Forward declarations */
 static bool is_transpose(size_t M, size_t N, const double A[N][M], const double B[M][N]);
@@ -54,21 +54,21 @@ static void transpose_submit(size_t M, size_t N, const double A[N][M], double B[
         //trans(M, N, A, B, tmp);
         int i, j, k, l;
     
-        for (i = 0; i < M; i += BLOCKSIZE) {
-            for (j = 0; j < N; j += BLOCKSIZE ) {
-                for (k = i ; k < i + BLOCKSIZE; k++) {
-                    for (l = j; l < j + BLOCKSIZE; l++) {
+        for (i = 0; i < M; i += SQUARE_MATRIX_BLOCK) {
+            for (j = 0; j < N; j += SQUARE_MATRIX_BLOCK ) {
+                for (k = i ; k < i + SQUARE_MATRIX_BLOCK; k++) {
+                    for (l = j; l < j + SQUARE_MATRIX_BLOCK; l++) {
                         if (i == j) {
                         // diagonal, put a row of block into tmp
-                        *(tmp + BLOCKSIZE * (i + 1) + l) = A[k][l];
+                        *(tmp + SQUARE_MATRIX_BLOCK * (i + 1) + l) = A[k][l];
                        } else {
                         B[l][k] = A[k][l];
                        }
                     }
                     if (i == j) {
                         //now put into a column of block from tmp
-                        for (l = j; l < j + BLOCKSIZE; l++) {
-                            B[l][k] = *(tmp + BLOCKSIZE * (i + 1) + l);
+                        for (l = j; l < j + SQUARE_MATRIX_BLOCK; l++) {
+                            B[l][k] = *(tmp + SQUARE_MATRIX_BLOCK * (i + 1) + l);
                         }
                     }
                 }
