@@ -26,6 +26,9 @@
 
 #define SQUARE_MATRIX_BLOCK 8
 #define RECT_MATRIX_BLOCK 4
+#define SQUARE_MATRIX_SIZE 32
+#define RECT_MATRIX_ROWS 63
+#define RECT_MATRIX_COLS 65
 /* Forward declarations */
 static int findMin(int a, int b);
 
@@ -46,10 +49,12 @@ static void transpose_submit(size_t M, size_t N, const double A[N][M], double B[
      * It's OK to choose different functions based on array size, but
      * your code must be correct for all values of M and N
      */
-    if (M == 32 && N == 32){
+
+    // Special optimization for 32 x 32 matrix 
+    if (M == SQUARE_MATRIX_SIZE
+        && N == SQUARE_MATRIX_SIZE){
 
         int i, j, k, l;
-    
         for (i = 0; i < M; i += SQUARE_MATRIX_BLOCK) {
             for (j = 0; j < N; j += SQUARE_MATRIX_BLOCK ) {
                 for (k = i ; k < i + SQUARE_MATRIX_BLOCK; k++) {
@@ -70,21 +75,32 @@ static void transpose_submit(size_t M, size_t N, const double A[N][M], double B[
                 }
             }
         }
-    }
-    else {
-        int i, j, k, l;
+    } 
+    else if (M == RECT_MATRIX_ROWS
+        && N == RECT_MATRIX_COLS) {
         
+        // Special optimization for 63 x 65 matrix
+        int i, j, k, l;
         for (i = 0; i < N; i += RECT_MATRIX_BLOCK) {
             for (j = 0; j < M; j += RECT_MATRIX_BLOCK ) {
                 for (k = i ; k < findMin(N,i + RECT_MATRIX_BLOCK); k++) {
                     for (l = j; l < findMin(M,j + RECT_MATRIX_BLOCK); l++) {
                         B[l][k] = A[k][l];
-                       }
                     }
                 }
             }
         }
+    } else{
+         // Regular transpose 
+        int i, j;
+        for (i = 0; i < N; i++) {
+            for (j = 0; j < M; j++) {	        
+                B[j][i] = A[i][j];	       
+            }	        
+        }
     }
+}
+
 /*
  * registerFunctions - This function registers your transpose
  *     functions with the driver.  At runtime, the driver will
