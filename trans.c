@@ -27,9 +27,6 @@
 #define SQUARE_MATRIX_BLOCK 8
 #define RECT_MATRIX_BLOCK 4
 /* Forward declarations */
-static bool is_transpose(size_t M, size_t N, const double A[N][M], const double B[M][N]);
-static void trans(size_t M, size_t N, const double A[N][M], double B[M][N], double *tmp);
-static void trans_tmp(size_t M, size_t N, const double A[N][M], double B[M][N], double *tmp);
 static int findMin(int a, int b);
 
 /*
@@ -51,7 +48,6 @@ static void transpose_submit(size_t M, size_t N, const double A[N][M], double B[
      */
     if (M == 32 && N == 32){
 
-        //trans(M, N, A, B, tmp);
         int i, j, k, l;
     
         for (i = 0; i < M; i += SQUARE_MATRIX_BLOCK) {
@@ -90,71 +86,6 @@ static void transpose_submit(size_t M, size_t N, const double A[N][M], double B[
         }
     }
 /*
- * You can define additional transpose functions below. We've defined
- * some simple ones below to help you get started.
- */
-
-/*
- * trans - A simple baseline transpose function, not optimized for the cache.
- */
-static const char trans_desc[] = "Simple row-wise scan transpose";
-
-/*
- * The following shows an example of a correct, but cache-inefficient
- *   transpose function.  Note the use of macros (defined in
- *   contracts.h) that add checking code when the file is compiled in
- *   debugging mode.  See the Makefile for instructions on how to do
- *   this.
- *
- *   IMPORTANT: Enabling debugging will significantly reduce your
- *   cache performance.  Be sure to disable this checking when you
- *   want to measure performance.
- */
-static void trans(size_t M, size_t N, const double A[N][M], double B[M][N], double *tmp)
-{
-    size_t i, j;
-
-    REQUIRES(M > 0);
-    REQUIRES(N > 0);
-
-    for (i = 0; i < N; i++) {
-        for (j = 0; j < M; j++) {
-            B[j][i] = A[i][j];
-        }
-    }
-
-    ENSURES(is_transpose(M, N, A, B));
-}
-
-/*
- * This is a contrived example to illustrate the use of the temporary array
- */
-
-static const char trans_tmp_desc[] =
-    "Simple row-wise scan transpose, using a 2X2 temporary array";
-
-static void trans_tmp(size_t M, size_t N, const double A[N][M], double B[M][N], double *tmp)
-{
-    size_t i, j;
-    /* Use the first four elements of tmp as a 2x2 array with row-major ordering. */
-    REQUIRES(M > 0);
-    REQUIRES(N > 0);
-
-    for (i = 0; i < N; i++) {
-        for (j = 0; j < M; j++) {
-            int di = i%2;
-            int dj = j%2;
-            tmp[2*di+dj] = A[i][j];
-            B[j][i] = tmp[2*di+dj];
-        }
-    }
-
-    ENSURES(is_transpose(M, N, A, B));
-}
-
-
-
-/*
  * registerFunctions - This function registers your transpose
  *     functions with the driver.  At runtime, the driver will
  *     evaluate each of the registered functions and summarize their
@@ -165,30 +96,6 @@ void registerFunctions(void)
 {
     /* Register your solution function */
     registerTransFunction(transpose_submit, transpose_submit_desc);
-
-    /* Register any additional transpose functions */
-    registerTransFunction(trans, trans_desc);
-    registerTransFunction(trans_tmp, trans_tmp_desc);
-
-}
-
-/*
- * is_transpose - This helper function checks if B is the transpose of
- *     A. You can check the correctness of your transpose by calling
- *     it before returning from the transpose function.
- */
-static bool is_transpose(size_t M, size_t N, const double A[N][M], const double B[M][N])
-{
-    size_t i, j;
-
-    for (i = 0; i < N; i++) {
-        for (j = 0; j < M; ++j) {
-            if (A[i][j] != B[j][i]) {
-                return false;
-            }
-        }
-    }
-    return true;
 }
 
 static int findMin(int a, int b) {
